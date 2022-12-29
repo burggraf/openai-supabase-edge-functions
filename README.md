@@ -1,4 +1,4 @@
-#Summoning the Magical Powers of ChatGPT from your Supabase Edge Functions
+# Summoning the Magical Powers of ChatGPT from your Supabase Edge Functions
 ChatGPT-Powered Supabase Edge Functions
 
 INTRO
