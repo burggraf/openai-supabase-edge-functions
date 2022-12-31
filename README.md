@@ -1,7 +1,8 @@
 # Summoning the Magical Powers of ChatGPT from your Supabase Edge Functions
-ChatGPT-Powered Supabase Edge Functions
 
-INTRO
+As a software developer, I'm always looking for ways to make my applications more powerful and efficient. In this tutorial, I'll show you how I added OpenAI calls to my Supabase edge functions, bringing the magic of AI to my applications in just a couple of minutes. By incorporating calls to OpenAI's state-of-the-art language models, I can add natural language processing capabilities, generate text, translate between languages, or nearly anything else I can think of - all within a single edge function. 
+
+What's more, it's integrated directly with my Supabase (PostgreSQL) database, so I can read existing data supplied by a user, automatically generate content, then store that content back in my database -- immediately when the data is entered, or on demand at any time.
 
 ### Seen any good movies lately?
 
@@ -40,7 +41,7 @@ Once your project is set up, you can follow the [Edge Functions Quickstart]( htt
 
 #### Create the Function: `recommendations`
 
-Following along in the Quickstart guide, you can create a function called `recommendations` to pick relevant movies.  Call it `recommenations`.  From inside your project folder, run:
+Following along in the Quickstart guide, you can create a function called `recommendations` to pick relevant movies.  Call it `recommendations`.  From inside your project folder, run:
 `supabase functions new recommendations`
 
 This will create a folder structure in your app that looks like this:
@@ -100,8 +101,8 @@ export const createCompletion = async (prompt: string) => {
 }
 ```
 
-Let's take a look at this utility function and break it down:
-- It's a basic Typescript async function.  (It's super important that this function works asyncronously, because we have no idea how long it's going to take OpenAI to calculate an answer for us.)
+Let's look at this utility function and break it down:
+- It's a basic Typescript async function.  (It's super important that this function works asynchronously, because we have no idea how long it's going to take OpenAI to calculate an answer for us.)
 - It takes a single string parameter, which is the prompt we'll be sending to OpenAI.  This is the same type of prompt you'd use if you opened up ChatGPT in a web browser and typed out a prompt in the chat window.
 - It uses the standard Javascript `fetch()` function to call the OpenAI API. 
 - We're calling the `completions` API endpoint of the OpenAPI `text-davinci-003` model, located here: `https://api.openai.com/v1/engines/text-davinci-003/completions`
@@ -113,13 +114,14 @@ Let's take a look at this utility function and break it down:
 ###### Managing the OpenAI API Key
 
 Our OpenAI API Key is sent in the `Authorization` header using a Deno environment variable we're going to call `OPENAI_API_KEY` like this:
+
 `Deno.env.get('OPENAI_API_KEY')`
 
 We could just has well have hard-coded our key like this:
 
 ```js
 headers: {
-          Authorization: `Bearer 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`,
+          Authorization: `Bearer <secret_openai_api_key>`,
           "Content-Type": "application/json",
         },
 ```
@@ -127,20 +129,24 @@ headers: {
 But that's a really bad security practice, and we never want to do that.  Plus, if our security key is compromised we'd have to come back and modify our source code and re-deploy our function.  
 
 Luckily, there's a better way to handle secret keys like this with Supabase Edge Functions.  We just use the Supabase CLI `secrets` keyword to save our secret in a protected area on the server:
-`supabase secrets set OPENAI_API_KEY=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`
+
+`supabase secrets set OPENAI_API_KEY=<secret_openai_api_key>`
 
 Now that our secret is securely stored at the server, we can use it in our code by calling the built-in Deno function like this: `Deno.env.get('OPENAI_API_KEY')`.  If our key ever gets compromised, we just delete it from the OpenAI dashboard, generate a new one, and call:
-`supabase secrets unset OPENAI_API_KEY`
-`supabase secrets set OPENAI_API_KEY=`<newly_generated_key>`
+
+```sh
+supabase secrets unset OPENAI_API_KEY
+supabase secrets set OPENAI_API_KEY=<new_secret_openai_key>
+```
 
 ##### Editing the `serve` Function
 
-Now, we'll need to edit the `serve` function that serves requests.  We'll need to:
+Now, we'll need to edit the `serve` function that handles requests.  We'll need to:
 - Take our list of `movies` sent as an array as input
-- Massage that list and turn it into a nice looking list of movies we can use in our prompt
+- Massage that list and turn it into a nice-looking list of movies we can use in our prompt
 - Build our text prompt into English that the `OpenAI Completion API` can understand
 - Send our completed prompt to the `createCompletion` utility function
-- Parse the response, extract the respose text we want, and sent return it to our app 
+- Parse the response, extract the response text we want, and sent return it to our app 
 
 Here is our edited `serve` function:
 
@@ -171,7 +177,7 @@ serve(async (req) => {
 ```
 
 Breaking it down:
-- `movies` is passed to the function as a `json` object, exactly the same way the `hello, world` function passed `name` to the function.  The only change here is that our parameter is now 1. called `movies` and 2. is now an `array` of `strings` (so we can pass several movies)
+- `movies` is passed to the function as a `json` object exactly the same way the `hello, world` function passed `name` to the function.  The only change here is that our parameter is now 1. called `movies` and 2. is now an `array` of `strings` (so we can pass several movies)
 - We use a `forEach` loop to turn the array of movies into a string of movies that we can insert into our prompt
 - If we send an array of movies: `["Raiders of the Lost Ark", "Back to the Future", "Die Hard"]` our prompt will end up looking like this: `I enjoyed the following movies: "Raiders of the Lost Ark", "Back to the Future", "Die Hard". Can you suggest some other movies I might like?`
 - We send this prompt to `createCompletion` and wait for a `result`
@@ -180,7 +186,7 @@ Breaking it down:
 
 #### Deploy the `recommendations` Function
 
-We should now be able to deploy our `recommenations` function and start calling it.  Using the `supabase cli` we just call:
+We should now be able to deploy our `recommendations` function and start calling it.  Using the `supabase cli` we just call:
 `supabase functions deploy recommendations`
 
 If we don't get any errors back, our function should be ready to use.  When we make changes to our function later, we'll need to call `supabase functions deploy recommendations` to deploy the new version each time.
@@ -207,3 +213,7 @@ Once you've completed your `curl` command, see the output you get:
 ```
 
 Not too bad.  OpenAI has some pretty good taste in movies!
+
+### Conclusion
+
+Wow, the possibilities are endless now that we have access to AI through edge functions! The hardest part will be deciding what amazing things we want to achieve with this technology. Supabase makes it easy for us by providing tools like PostgreSQL data, GoTrue authentication, cloud storage, and real-time updates, not to mention the added bonus of OpenAI edge functions. Let's brainstorm and come up with some incredible ideas for how we can use these tools to change the world!
