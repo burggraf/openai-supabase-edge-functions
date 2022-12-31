@@ -45,9 +45,9 @@ Following along in the Quickstart guide, you can create a function called `recom
 `supabase functions new recommendations`
 
 This will create a folder structure in your app that looks like this:
-`supabase/functions/discovery/`
+`supabase/functions/recommendations/`
 and your function will be inside the file:
-`supabase/functions/discovery/index.ts`
+`supabase/functions/recommendations/index.ts`
 Open that file in your text editor, and we’ll set it up to make the API call to OpenAI.
 
 #### Editing the Function
